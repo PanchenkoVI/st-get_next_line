@@ -1,0 +1,89 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    instruction1.txt                                   :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: sverkart <sverkart@msk.21-school.ru>       +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2020/06/03 19:20:17 by sverkart          #+#    #+#              #
+#    Updated: 2020/06/03 21:54:07 by sverkart         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+int ft_checkline(char *back)
+{
+	int i;
+
+	i = 0;
+	while (back[i] != '\0')
+	{
+		if (back[i] == '\n')
+			return (i);
+		i++;
+	}
+	return (-1);
+}
+
+int split_line(char **back, int checkline, char **line, char **buffer)
+{
+	char *point;
+
+	(*back)[checkline] = '\0';
+	*line = ft_strdup(*back);
+	point = ft_strdup(*back + checkline + 1);
+	free(*back);
+	free(*buffer);
+	*back = point;
+	return (1);
+}
+
+int return_all(char **back, char **line, int read_size, char **buffer)
+{
+	int checkline;
+
+	if (read_size < 0)
+		return (-1);
+	if (*back && (checkline = ft_checkline(*back)) >= 0)
+		return (split_line(back, checkline, line, buffer));
+	else if (*back)
+	{
+		*line = *back;
+		*back = 0;
+		free(*buffer);
+		return (0);
+	}
+	*line - ft_strdup("");
+	free(*buffer);
+	free(*back);
+	return (0);
+}
+
+
+int get_next_line(int fd, char **line)
+{
+	static char *back[100];
+	ssize_t sizeofread; // количество символов которых прочитал // ssize_t = typedef long ssize_t
+	char *buffer;
+	int checkline;
+	
+	if (fd < 0 || line == NULL)
+		return (-1);
+	if (BUFFER_SIZE <= 0)
+		return (-1);
+	if (!(buffer = malloc(sizeof(char) * (BUFFER_SIZE + 1))))
+		return (-1);
+	while ((sizeofread = read(fd, buffer, BUFFER_SIZE)) > 0)
+	{
+		buffer[sizeofread] = '\0';
+		if (back[fd] == NULL) // статичный массив. если пустой тогда вывводим пустую строку
+			back[fd] = ft_strdup("");
+		back[fd] = ft_strjoin(back[fd], buffer); //
+	//	if (!back[fd] = ft_strjoin(back[fd], buffer))
+	//	{
+	//		free buffer; - можно было бы добавить
+	//	 	return - 1; - защита от перезаполнения/ так как join увеличивает память в двое/
+		if ((checkline = ft_checkline(back[fd])) >= 0)
+			return (split_line(&back[fd], checkline, line, &buffer));
+	}
+	return (return_all(&back[fd], line, sizeofread, &buffer));
+}

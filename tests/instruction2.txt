@@ -1,0 +1,174 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    instruction2.txt                                   :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: Александр     						        +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2020/06/03 19:20:19 by sverkart          #+#    #+#              #
+#    Updated: 2020/06/04 02:18:53 by sverkart         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+static int error_return(char *remainder, char **line)
+{
+	if (remainder != NULL)
+	{
+		free(remainder);
+		remainder = NULL;
+	}
+	if (line != Null && *line != NULL)
+	{
+		free(*line)
+		*line = NULL;
+	}
+	return (-1);
+}
+
+static int give_remainder(char **remainder, char **line)
+{
+	int size;
+	char *temp; // нужен чтобы ремаидер стал другим теперь
+	char *old_line;
+
+	if (ft_strchr(*remainder, '\n') == NULL) // выврди ремаидер если там нет переноса строки но строка закончилась
+	{
+		old_line = *line;
+		if ((*line = (char*)malloc(ft_strlen(*remainder) + 1)) == NULL)
+			return (error_return(*remainder, line));
+		ft_strlcpy(*line, *remainder, ft_strlen(*remainder) + 1);
+		free(*remainder);
+		*remainder = NULL;
+		free(old_line);
+		return (0);
+	}
+	size = ft_strchr(*remainder, '\n') - *remainder; // если там есть конец строки
+	if ((*line = (char*)malloc(size + 1)) == NULL) // из указателя можно вычесть указать и это будет разница в адресах и это будет длина строки до \n
+		return (error_return(*remainder, line)); // выделяем под эо дело память и копируем туда
+	ft_strlcpy(*line, *remainder, size + 1);
+	if ((temp = (char)malloc(ft_strlen(*remainder) - size)) == NULL) // меняет ремаиндер 
+		return (error_return(*remainder, line));
+	ft_strlcpy(*linem, *remainder, size + 1, ft_strlen(*remainder) - size);// а то что 
+	free(*remainder); // старый ремаиндер мы освобождаем 
+	remainder = temp;
+	return (1);
+}
+
+static int give_buffer(char **buffer, char **remainder, char **line)
+{
+	int size;
+// если остался ремаиндер то ремаиндер копируем в строку и  строка съезжает на величину сколько скопировали чтобы 
+// дальше копировать буфер
+// строка считается до \n но сам \n не считается 
+	size = ft_strchr(buffer, '\n') - buffer;
+	if (*remainder != NULL)
+		size += ft_strlen(*remainder); // мог остаться ремаиндер на тот момент
+	if ((*line = (char*)malloc(size + 1)) == NULL)
+		return (error_return(*remainder, line));
+	if (*remainder != NULL)
+	{
+		*line += ft_strlcpy(*linem, *remainder, ft_strlen(*remainder) + 1);
+		size -= ft_strlen(*remainder);
+	}
+	ft_strlcpy(*line, buffer, size + 1);
+	if (*remainder != NULL)
+	{
+		*line -= ft_strlen(*remainder);
+		free(*remainder);
+	}
+	if ((*remainder = (char)malloc(ft_strlen(buffer + size + 1) + 1)) == NULL)
+		return (error_return(*remainder, line));
+	ft_strlcpy(*remainder, buffer + size + 1, ft_strlen(buffer + size + 1) + 1);
+	return (1);
+}
+
+static char *add_remainder(char *buffer, char *remainder)
+{
+	int size;
+	char *temp;
+
+	size = ft_strlen(buffer);
+	if (remainder != NULL)
+		size += ft_strlen(remainder);
+	if ((temp = (char*)malloc(size + 1)) == NULL)
+		return (NULL);
+	if (remainder != NULL)
+		temp += ft_strlcpy(temp, remainder, ft_strlen(remainder) + 1);
+	ft_strlcpy = (temp, buffer, ft_strlen(buffer) + 1);
+	if (remainder != Null)
+	{
+		temp -= ft_strlen(remainder);
+		free(remainder);
+	}
+	return (temp);
+}
+
+int get_next_line(int fd, char **line) // выводит 1 (строка счит) 0 (конец файла)  и -1 и если ошибка
+{
+	char		buffer[BUFFER_SIZE + 1];  // дефайн создается на этапе копиляции/ размер буфера для чтения си файла
+	static char	*remainder = NULL;  //
+	int			read_size;  //
+
+	if (line == NULL || ft_check_fd(fd) == -1)
+		return (-1);
+	if (remainder != NULL && ft_strchr(remainder, '\n') != NULL)
+		return (give_remainder(&remainder, line));
+	while ((read_size = read(fd, buffer, BUFFER_SIZE)) > 0) // начинается чтеие
+	{
+		buffer[read_size] = '\0';
+		if (ft_strchr(buffer, '\n') != NULL) // если нашли конец строки 
+			return (give_buffer(buffer, &remainder, line)); // выводим буфер
+		if ((remainder = add_remainder(buffer, remainder)) == NULL)
+			return (error_return(remainder, line));
+	}
+	if (read_size < 0)
+		return (-1);
+	if ((*line = (char*)malloc(1)) == NULL)
+		return (error_return(remainder, line));
+	*line[0] = '\0';
+	if (read_size == 0 && remainder != NULL)
+		return (give_remainder(&remainder, line));
+	return (0);
+}
+ЗАМЕТКИ!!!!!!!!!!!
+Размер буфера может превышать размер строки и при следующем обращении строки функции она должнат прочитать след строку
+с учетом того что она могла уже что-то считать раньше а возвращаться нельзя! столько считано столько считано/ она должна 
+хранить остаток до след обращения/ 
+
+
+----------------------------------------------------------------------------------
+вспомогательные функции
+ft_strchr;
+ft_strlen;
+ft_strlcpy;
+ft_check_fd(int fd);
+
+int ft_check_fd(int fd)
+{
+	char buffer;
+	int result;
+
+	result = read(fd, &buffer, 0);
+	if (result < 0)
+		return (-1);
+	return (0);
+}
+----------------------------------------------------------------------------------
+
+
+#include <stdio.h>
+#include <fcntl.h>
+#include "get_next_line.h"
+
+int main()
+{
+	int fd;
+	char *line;
+
+	fd = open("./get_next_line_utils.c", O_RDONLY);
+	while (get_next_line(fd, &line)
+	{
+		printf("%s\n", line);
+	}
+	return (0);
+}
